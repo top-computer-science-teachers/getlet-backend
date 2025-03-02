@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderTypeEnum;
 use App\Http\Requests\User\CreateUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\User\UserResource;
@@ -15,7 +16,9 @@ class UserController extends Controller
     {
         $users = User::all();
 
-        return response()->json(UserResource::make($users), 200);
+        $type = OrderTypeEnum::SEND;
+
+        return response()->json(UserResource::collection($users), 200);
     }
 
     public function store(CreateUserRequest $request): JsonResponse
