@@ -24,10 +24,10 @@ class CreateUserRequest extends FormRequest
         return [
             'firstname' => 'required|string',
             'lastname' => 'required|string',
-            'password' => 'required|string',
-            'phone' => 'required|string',
-            'country_id' => 'nullable|string',
-            'city_id' => 'nullable|string',
+            'password' => 'required|string|min:8',
+            'phone' => 'required|string|unique:users,phone',
+            'country_id' => 'nullable|string|exists:countries,id',
+            'city_id' => 'nullable|string|exists:cities,id',
         ];
     }
 }

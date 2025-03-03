@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Country;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,6 +20,7 @@ class CityFactory extends Factory
         return [
             'name' => fake()->city(),
             'timezone' => fake()->timezone(),
+            'country_id' => Country::factory(),
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
@@ -21,7 +22,6 @@ class User extends Authenticatable
         'lastname',
         'phone',
         'password',
-        'country_id',
         'city_id',
     ];
 
@@ -49,18 +49,18 @@ class User extends Authenticatable
     }
 
     /**
-     * @return HasOne
+     * @return BelongsTo
      */
-    public function country(): HasOne
+    public function city(): BelongsTo
     {
-        return $this->hasOne(Country::class, 'id', 'country_id');
+        return $this->belongsTo(City::class, 'city_id', 'id');
     }
 
     /**
-     * @return HasOne
+     * @return mixed
      */
-    public function city(): HasOne
+    public function country(): mixed
     {
-        return $this->hasOne(City::class, 'id', 'city_id');
+        return $this->city->country();
     }
 }
