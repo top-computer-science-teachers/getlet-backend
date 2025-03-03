@@ -24,7 +24,10 @@ class CreateUserRequest extends FormRequest
         return [
             'firstname' => 'required|string',
             'lastname' => 'required|string',
-            'password' => 'nullable|string',
+            'password' => 'required|string',
+            'phone' => 'required|string',
+            'country_id' => 'nullable|string',
+            'city_id' => 'nullable|string',
         ];
     }
 }
