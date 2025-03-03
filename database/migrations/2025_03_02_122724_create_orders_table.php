@@ -15,17 +15,18 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
 
-            $table->enum('type', ['send', 'take'])->default('send');
+            $table->enum('order_type', ['send', 'take'])->default('send');
             $table->string('object');
+
             $table->string('date');
-            $table->string('price');
-            $table->string('sender_contact');
-            $table->string('receiver_contact');
 
-            $table->foreignUuid('from_country_id')->constrained('cities')->cascadeOnDelete();
+            $table->enum('price_type', ['fix', 'contract'])->default('fix');
+            $table->bigInteger('price')->nullable();
+
+            $table->string('sender_contact')->nullable();
+            $table->string('receiver_contact')->nullable();
+
             $table->foreignUuid('from_city_id')->constrained('cities')->cascadeOnDelete();
-
-            $table->foreignUuid('to_country_id')->constrained('cities')->cascadeOnDelete();
             $table->foreignUuid('to_city_id')->constrained('cities')->cascadeOnDelete();
 
 

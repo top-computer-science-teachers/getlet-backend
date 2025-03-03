@@ -3,20 +3,61 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Order\CreateOrderRequest;
+use App\Http\Requests\Order\UpdateOrderRequest;
 use App\Http\Resources\Order\OrderResource;
 use App\Models\Order;
+use App\Presenters\JsonPresenter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
-    public function index()
-    {
-        $orders = Order::all();
 
-        return response()->json(OrderResource::collection($orders), 200);
+    /**
+     * get orders
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(Request $request)
+    {
+        // todo: need to add sort by price
+        // todo: need to add filter by date period
+
+        $page = $request->input('page') ?? 1;
+        $perPage = $request->input('per_page') ?? 20;
+
+        $query = Order::query()
+            ->orderByDesc('updated_at');
+
+        $orderType = $request->input('order_type') ?? 'send';
+
+        $fromCityId = $request->input('from_city_id') ?? null;
+        if ($fromCityId) {
+            $query->where('from_city_id', $fromCityId);
+        }
+
+        $toCityId = $request->input('to_city_id') ?? null;
+        if ($toCityId) {
+            $query->where('to_city_id', $toCityId);
+        }
+
+        $orders = $query
+            ->where('order_type', $orderType)
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return JsonPresenter::make()
+            ->setData(OrderResource::collection($orders))
+            ->setPagination($orders)
+            ->setStatusCode(200)
+            ->respond();
     }
 
+    /**
+     * create order
+     *
+     * @param CreateOrderRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function store(CreateOrderRequest $request)
     {
         $data = $request->validated();
@@ -27,23 +68,81 @@ class OrderController extends Controller
 
         $order = Order::query()->create($data);
 
-        return response()->json([
-            'message' => 'Order created successfully',
-            'data' => OrderResource::make($order)
-        ], 201);
+        return JsonPresenter::make()
+            ->setMessage('Order created successfully')
+            ->setData(OrderResource::make($order))
+            ->setStatusCode(201)
+            ->respond();
     }
 
+    /**
+     * show order
+     *
+     * @param String $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function show(String $id)
     {
-        $oder = Order::query()->find($id);
+        $order = Order::query()->find($id);
+        if (!$order) {
+            return JsonPresenter::make()
+                ->setError('Order not found')
+                ->setStatusCode(404)
+                ->respond();
+        }
 
-        return response()->json(OrderResource::make($oder), 200);
+        return JsonPresenter::make()
+            ->setData(OrderResource::make($order))
+            ->setStatusCode(200)
+            ->respond();
     }
 
+    /**
+     * update order
+     *
+     * @param String $id
+     * @param UpdateOrderRequest $request
+     * @return \Illuminate\Http\JsonResponse|void
+     */
+    public function update(String $id, UpdateOrderRequest $request)
+    {
+        $order = Order::query()->find($id);
+        if (!$order) {
+            return JsonPresenter::make()
+                ->setError('Order not found')
+                ->setStatusCode(404)
+                ->respond();
+        }
+
+        $data = $request->validated();
+
+        $order->update($data);
+
+        return JsonPresenter::make()
+            ->setMessage('Order updated successfully')
+            ->setData(OrderResource::make($order))
+            ->setStatusCode(200)
+            ->respond();
+    }
+
+    /**
+     * @param String $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy(String $id)
     {
         $order = Order::query()->find($id);
+        if (!$order) {
+            return JsonPresenter::make()
+                ->setError('Order not found')
+                ->setStatusCode(404)
+                ->respond();
+        }
+        $order->delete();
 
-        return response()->json(['message' => 'Order deleted successfully'], 200);
+        return JsonPresenter::make()
+            ->setMessage('Order deleted successfully')
+            ->setStatusCode(200)
+            ->respond();
     }
 }
