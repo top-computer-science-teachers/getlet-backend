@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Order\CompleteOrderRequest;
 use App\Http\Requests\Order\CreateOrderRequest;
 use App\Http\Requests\Order\UpdateOrderRequest;
 use App\Http\Resources\Order\OrderResource;
 use App\Models\Order;
+use App\Models\UserStatistics;
 use App\Presenters\JsonPresenter;
 use Illuminate\Http\Request;
 
@@ -64,14 +66,66 @@ class OrderController extends Controller
 
         $user = $request->user();
 
-        $data['user_id'] = $user->id;
+        $data['author_id'] = $user->id;
 
         $order = Order::query()->create($data);
+
+        if ($order) {
+            $order->user->statistics->order_send_created_count = $order->author->statistics->order_send_created_count + 1;
+        }
 
         return JsonPresenter::make()
             ->setMessage('Order created successfully')
             ->setData(OrderResource::make($order))
             ->setStatusCode(201)
+            ->respond();
+    }
+
+    public function orderTake(String $id, Request $request)
+    {
+        $order = Order::query()->find($id);
+        if (!$order) {
+            return JsonPresenter::make()
+                ->setError('Order not found')
+                ->setStatusCode(404)
+                ->respond();
+        }
+
+        $contractor = $request->user();
+
+        $order->status = 'in_way';
+        $order->save();
+
+        $contractor->statistics->order_take_created_count = $contractor->statistics->order_take_created_count + 1;
+    }
+
+    public function orderComplete(String $id, CompleteOrderRequest $request)
+    {
+        $order = Order::query()->find($id);
+        if (!$order) {
+            return JsonPresenter::make()
+                ->setError('Order not found')
+                ->setStatusCode(404)
+                ->respond();
+        }
+
+        $data = $request->validated();
+
+        if ($data['status']) {
+            $order->author->statistics->order_send_completed_count = $order->author->statistics->order_send_completed_count + 1;
+            $order->contractor->statistics->order_take_completed_count = $order->contractor->statistics->order_take_completed_count + 1;
+            $order->status = 'completed';
+            $order->save();
+        } else {
+            $order->author->statistics->order_send_failed_count = $order->author->statistics->order_send_failed_count + 1;
+            $order->contractor->statistics->order_take_failed_count = $order->contractor->statistics->order_take_failed_count + 1;
+            $order->status = 'failed';
+            $order->save();
+        }
+
+        return JsonPresenter::make()
+            ->setMessage('Order status updated successfully')
+            ->setStatusCode(200)
             ->respond();
     }
 

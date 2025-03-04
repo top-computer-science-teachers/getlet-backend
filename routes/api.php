@@ -24,7 +24,11 @@ Route::prefix('v1')->group(function () {
         Route::prefix('orders')->group(function () {
             Route::get('/', [OrderController::class, 'index']);
             Route::get('/{id}', [OrderController::class, 'show']);
+
             Route::post('/', [OrderController::class, 'store']);
+            Route::post('/{id}/take', [OrderController::class, 'orderTake']);
+            Route::post('/{id}/complete', [OrderController::class, 'orderComplete']);
+
             Route::put('/{id}', [OrderController::class, 'update']);
             Route::delete('/{id}', [OrderController::class, 'destroy']);
         });

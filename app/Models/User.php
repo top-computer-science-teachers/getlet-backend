@@ -50,6 +50,29 @@ class User extends Authenticatable
     }
 
     /**
+     * @return void
+     */
+    public static function boot()
+    {
+        parent::boot();
+        static::created(function ($model) {
+             UserStatistics::query()->create([
+                 'user_id' => $model->id,
+             ]);
+        });
+    }
+
+    public function orderProcesses()
+    {
+        return $this->hasMany(OrderProcess::class);
+    }
+
+    public function statistics()
+    {
+        return $this->hasOne(UserStatistics::class);
+    }
+
+    /**
      * @return BelongsTo
      */
     public function city(): BelongsTo

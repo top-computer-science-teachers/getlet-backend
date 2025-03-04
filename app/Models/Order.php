@@ -15,6 +15,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'order_type',
+        'order_status',
         'object',
         'date',
         'price',
@@ -28,6 +29,11 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function process()
+    {
+        return $this->hasOne(OrderProcess::class, 'order_id', 'id');
     }
 
     public function to_city(): BelongsTo
