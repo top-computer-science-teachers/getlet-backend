@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -62,12 +63,12 @@ class User extends Authenticatable
         });
     }
 
-    public function orderProcesses()
+    public function orderProcesses(): HasMany
     {
         return $this->hasMany(OrderProcess::class);
     }
 
-    public function statistics()
+    public function statistics(): HasOne
     {
         return $this->hasOne(UserStatistics::class);
     }

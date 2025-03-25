@@ -15,15 +15,13 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
 
-            $table->enum('order_type', ['send', 'take'])->default('send');
-            $table->enum('order_status', [
+            $table->enum('type', ['send', 'take'])->default('send');
+            $table->enum('status', [
                 'pending',
                 'in_way',
                 'completed',
                 'failed',
             ])->default('pending');
-
-            $table->string('object');
 
             $table->string('date');
 

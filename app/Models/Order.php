@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
@@ -14,9 +16,8 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
-        'order_type',
-        'order_status',
-        'object',
+        'type',
+        'status',
         'date',
         'price',
         'price_type',
@@ -31,7 +32,12 @@ class Order extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function process()
+    public function packages(): HasMany
+    {
+        return $this->hasMany(OrderPackage::class, 'order_id', 'id');
+    }
+
+    public function process(): HasOne
     {
         return $this->hasOne(OrderProcess::class, 'order_id', 'id');
     }

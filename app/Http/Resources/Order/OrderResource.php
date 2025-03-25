@@ -20,14 +20,14 @@ class OrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'order_type' => $this->order_type,
-            'order_status' => $this->order_status,
-            'object' => $this->object,
+            'type' => $this->type,
+            'status' => $this->status,
             'date' => Carbon::parse($this->date)->format('Y-m-d'),
             'price_type' => $this->price_type,
             'price' => $this->price_type == 'contract' ? 'Договорная' : $this->price,
             'sender_contact' => $this->sender_contact,
             'receiver_contact' => $this->receiver_contact,
+            'packages' => $this->packages ? OrderPackageResource::collection($this->packages) : [],
             'from' => [
                 'country' => CountryResource::make($this->from_city->country),
                 'city' => CityResource::make($this->from_city),

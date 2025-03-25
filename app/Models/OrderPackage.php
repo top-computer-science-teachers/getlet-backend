@@ -6,24 +6,21 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class OrderProcess extends Model
+class OrderPackage extends Model
 {
     use HasUuids;
 
-    protected $table = 'order_processes';
+    protected $table = 'order_packages';
 
     protected $fillable = [
         'order_id',
-        'user_id',
+        'title',
+        'description',
+        'weight'
     ];
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Order::class, 'order_id', 'id');
     }
 }

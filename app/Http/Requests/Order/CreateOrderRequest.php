@@ -22,8 +22,7 @@ class CreateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_type' => 'required|string|in:send,take',
-            'object' => 'required|string',
+            'type' => 'required|string|in:send,take',
             'date' => 'required|string',
             'price_type' => 'required|string|in:fix,contract',
             'price' => 'required_if:price_type,fix|integer|nullable',
@@ -31,6 +30,10 @@ class CreateOrderRequest extends FormRequest
             'receiver_contact' => 'nullable|string',
             'from_city_id' => 'required|string|exists:cities,id',
             'to_city_id' => 'required|string|exists:cities,id',
+            'packages' => 'required|array',
+            'packages.*.title' => 'required|string|max:255',
+            'packages.*.description' => 'nullable|string',
+            'packages.*.weight' => 'nullable|integer',
         ];
     }
 }

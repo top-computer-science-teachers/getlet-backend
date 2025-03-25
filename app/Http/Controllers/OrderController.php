@@ -7,9 +7,10 @@ use App\Http\Requests\Order\CreateOrderRequest;
 use App\Http\Requests\Order\UpdateOrderRequest;
 use App\Http\Resources\Order\OrderResource;
 use App\Models\Order;
-use App\Models\UserStatistics;
+use App\Models\OrderPackage;
 use App\Presenters\JsonPresenter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -25,26 +26,26 @@ class OrderController extends Controller
         // todo: need to add sort by price
         // todo: need to add filter by date period
 
-        $page = $request->input('page') ?? 1;
-        $perPage = $request->input('per_page') ?? 20;
+        $page = $request->input('page', 1);
+        $perPage = $request->input('per_page', 20);
 
         $query = Order::query()
             ->orderByDesc('updated_at');
 
-        $orderType = $request->input('order_type') ?? 'send';
+        $orderType = $request->input('type') ?? 'send';
 
-        $fromCityId = $request->input('from_city_id') ?? null;
+        $fromCityId = $request->input('from_city_id', null);
         if ($fromCityId) {
             $query->where('from_city_id', $fromCityId);
         }
 
-        $toCityId = $request->input('to_city_id') ?? null;
+        $toCityId = $request->input('to_city_id', null);
         if ($toCityId) {
             $query->where('to_city_id', $toCityId);
         }
 
         $orders = $query
-            ->where('order_type', $orderType)
+            ->where('type', $orderType)
             ->paginate($perPage, ['*'], 'page', $page);
 
         return JsonPresenter::make()
@@ -63,24 +64,46 @@ class OrderController extends Controller
     public function store(CreateOrderRequest $request)
     {
         $data = $request->validated();
-
         $user = $request->user();
 
-        $data['author_id'] = $user->id;
+        $data['user_id'] = $user->id;
 
-        $order = Order::query()->create($data);
+        return DB::transaction(function () use ($data, $user) {
 
-        if ($order) {
-            $order->user->statistics->order_send_created_count = $order->author->statistics->order_send_created_count + 1;
-        }
+            if ($data['from_city_id'] == $data['to_city_id']) {
+                return JsonPresenter::make()
+                    ->setMessage('Невозможно создать заказ в одном городе!')
+                    ->setStatusCode(400)
+                    ->respond();
+            }
 
-        return JsonPresenter::make()
-            ->setMessage('Order created successfully')
-            ->setData(OrderResource::make($order))
-            ->setStatusCode(201)
-            ->respond();
+            $packages = $data['packages'];
+            unset($data['packages']);
+
+            $order = Order::query()->create($data);
+
+            foreach ($packages as $package) {
+                OrderPackage::query()->create([
+                    'order_id' => $order->id,
+                    'title' => $package['title'],
+                    'description' => $package['description'] ?? null,
+                    'weight' => $package['weight'] ?? 0,
+                ]);
+            }
+
+            return JsonPresenter::make()
+                ->setMessage('Order created successfully')
+                ->setData(OrderResource::make($order))
+                ->setStatusCode(201)
+                ->respond();
+        });
     }
 
+    /**
+     * @param String $id
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function orderTake(String $id, Request $request)
     {
         $order = Order::query()->find($id);
@@ -91,14 +114,20 @@ class OrderController extends Controller
                 ->respond();
         }
 
-        $contractor = $request->user();
-
         $order->status = 'in_way';
         $order->save();
 
-        $contractor->statistics->order_take_created_count = $contractor->statistics->order_take_created_count + 1;
+        return JsonPresenter::make()
+            ->setMessage('Create order take')
+            ->setStatusCode(200)
+            ->respond();
     }
 
+    /**
+     * @param String $id
+     * @param CompleteOrderRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function orderComplete(String $id, CompleteOrderRequest $request)
     {
         $order = Order::query()->find($id);
@@ -112,16 +141,12 @@ class OrderController extends Controller
         $data = $request->validated();
 
         if ($data['status']) {
-            $order->author->statistics->order_send_completed_count = $order->author->statistics->order_send_completed_count + 1;
-            $order->contractor->statistics->order_take_completed_count = $order->contractor->statistics->order_take_completed_count + 1;
             $order->status = 'completed';
-            $order->save();
         } else {
-            $order->author->statistics->order_send_failed_count = $order->author->statistics->order_send_failed_count + 1;
-            $order->contractor->statistics->order_take_failed_count = $order->contractor->statistics->order_take_failed_count + 1;
             $order->status = 'failed';
-            $order->save();
         }
+
+        $order->save();
 
         return JsonPresenter::make()
             ->setMessage('Order status updated successfully')
@@ -165,6 +190,13 @@ class OrderController extends Controller
             return JsonPresenter::make()
                 ->setError('Order not found')
                 ->setStatusCode(404)
+                ->respond();
+        }
+
+        if ($order->status != 'pending') {
+            return JsonPresenter::make()
+                ->setMessage('Невозможно редактировать заказ который уже в пути!')
+                ->setStatusCode(400)
                 ->respond();
         }
 
